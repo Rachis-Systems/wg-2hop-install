@@ -244,6 +244,9 @@ Address = ${SERVER_WG_IPV4}/24,${SERVER_WG_IPV6}/64
 ListenPort = ${SERVER_PORT}
 PrivateKey = ${SERVER_PRIV_KEY}" >"/etc/wireguard/${SERVER_WG_NIC}.conf"
 
+	# Setup firewall rules
+	BASE_IPV4=$(echo "$SERVER_WG_IPV4" | awk -F '.' '{ print $1"."$2"."$3 }')
+
 	if pgrep firewalld; then
 		FIREWALLD_IPV4_ADDRESS=$(echo "${SERVER_WG_IPV4}" | cut -d"." -f1-3)".0"
 		FIREWALLD_IPV6_ADDRESS=$(echo "${SERVER_WG_IPV6}" | sed 's/:[^:]*$/:0/')
@@ -267,12 +270,12 @@ PostUp = iptables -A FORWARD -j FORWARD_WG2HOP
 
 # Allow the internet traffic through the VPN.
 # The AllowedIPs fields in ${SERVER_WG_NIC}.conf will ensure they go to the right place and nowhere else.
-PostUp = iptables -A FORWARD_WG2HOP ! -s 10.66.88.0/24 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -j ACCEPT
-PostUp = iptables -A FORWARD_WG2HOP ! -d 10.66.88.0/24 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -j ACCEPT
+PostUp = iptables -A FORWARD_WG2HOP ! -s ${BASE_IPV4}.0/24 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -j ACCEPT
+PostUp = iptables -A FORWARD_WG2HOP ! -d ${BASE_IPV4}.0/24 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -j ACCEPT
 
 # Allow pinging the special client.
-PostUp = iptables -A FORWARD_WG2HOP -d 10.66.88.2/32 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -p icmp -j ACCEPT
-PostUp = iptables -A FORWARD_WG2HOP -s 10.66.88.2/32 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -p icmp -j ACCEPT
+PostUp = iptables -A FORWARD_WG2HOP -d ${BASE_IPV4}.2/32 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -p icmp -j ACCEPT
+PostUp = iptables -A FORWARD_WG2HOP -s ${BASE_IPV4}.2/32 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -p icmp -j ACCEPT
 
 # Disallow anything else related to the VPN.
 PostUp = iptables -A FORWARD_WG2HOP -i ${SERVER_WG_NIC} -j DROP
@@ -286,7 +289,8 @@ PostDown = iptables -D OUTPUT -o ${SERVER_WG_NIC} ! -p icmp -j DROP
 # Cleanup the FORWARD_WG2HOP chain.
 PostDown = iptables -D FORWARD -j FORWARD_WG2HOP
 PostDown = iptables -F FORWARD_WG2HOP
-PostDown = iptables -X FORWARD_WG2HOP" >>"/etc/wireguard/${SERVER_WG_NIC}.conf"
+PostDown = iptables -X FORWARD_WG2HOP
+" >>"/etc/wireguard/${SERVER_WG_NIC}.conf"
 	fi
 
 	# Enable routing on the server
