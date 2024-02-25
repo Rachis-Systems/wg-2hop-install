@@ -13,7 +13,7 @@ NC='\033[0m'
 
 echo -e "${RED}!! WARNING !!"
 echo -e "${ORANGE}This is a modified version of angristan/wiregaurd-install"
-echo -e "A second interface (wg1) is used to avoid conflict with the original script."
+echo -e "A second interface (wg2hop) is used to avoid conflict with the original script."
 echo -e "This script contains modifications to route traffic through the first created client."
 echo -e "So the traffic takes double-hops to reach the destination."
 echo -e "${RED}!! WARNING !!"
