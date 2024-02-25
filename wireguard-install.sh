@@ -251,18 +251,42 @@ PrivateKey = ${SERVER_PRIV_KEY}" >"/etc/wireguard/${SERVER_WG_NIC}.conf"
 		echo "PostUp = firewall-cmd --add-port ${SERVER_PORT}/udp && firewall-cmd --add-rich-rule='rule family=ipv4 source address=${FIREWALLD_IPV4_ADDRESS}/24 masquerade' && firewall-cmd --add-rich-rule='rule family=ipv6 source address=${FIREWALLD_IPV6_ADDRESS}/24 masquerade'
 PostDown = firewall-cmd --remove-port ${SERVER_PORT}/udp && firewall-cmd --remove-rich-rule='rule family=ipv4 source address=${FIREWALLD_IPV4_ADDRESS}/24 masquerade' && firewall-cmd --remove-rich-rule='rule family=ipv6 source address=${FIREWALLD_IPV6_ADDRESS}/24 masquerade'" >>"/etc/wireguard/${SERVER_WG_NIC}.conf"
 	else
-		echo "PostUp = iptables -I INPUT -p udp --dport ${SERVER_PORT} -j ACCEPT
-PostUp = iptables -I FORWARD -i ${SERVER_PUB_NIC} -o ${SERVER_WG_NIC} -j ACCEPT
-PostUp = iptables -I FORWARD -i ${SERVER_WG_NIC} -j ACCEPT
-PostUp = iptables -t nat -A POSTROUTING -o ${SERVER_PUB_NIC} -j MASQUERADE
-PostUp = ip6tables -I FORWARD -i ${SERVER_WG_NIC} -j ACCEPT
-PostUp = ip6tables -t nat -A POSTROUTING -o ${SERVER_PUB_NIC} -j MASQUERADE
+		echo "
+# Allow connecting to the VPN.
+PostUp = iptables -I INPUT -p udp --dport ${SERVER_PORT} -j ACCEPT
+
+# Secure the server (relay) from the VPN.
+PostUp = iptables -A INPUT -i ${SERVER_WG_NIC} ! -p icmp -j DROP
+
+# Prevent the server (relay) from intervening with the VPN.
+PostUp = iptables -A OUTPUT -o ${SERVER_WG_NIC} ! -p icmp -j DROP
+
+# Setup custom chain for the FORWARD rules.
+PostUp = iptables -N FORWARD_WG2HOP
+PostUp = iptables -A FORWARD -j FORWARD_WG2HOP
+
+# Allow the internet traffic through the VPN.
+# The AllowedIPs fields in ${SERVER_WG_NIC}.conf will ensure they go to the right place and nowhere else.
+PostUp = iptables -A FORWARD_WG2HOP ! -s 10.66.88.0/24 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -j ACCEPT
+PostUp = iptables -A FORWARD_WG2HOP ! -d 10.66.88.0/24 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -j ACCEPT
+
+# Allow pinging the special client.
+PostUp = iptables -A FORWARD_WG2HOP -d 10.66.88.2/32 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -p icmp -j ACCEPT
+PostUp = iptables -A FORWARD_WG2HOP -s 10.66.88.2/32 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -p icmp -j ACCEPT
+
+# Disallow anything else related to the VPN.
+PostUp = iptables -A FORWARD_WG2HOP -i ${SERVER_WG_NIC} -j DROP
+PostUp = iptables -A FORWARD_WG2HOP -o ${SERVER_WG_NIC} -j DROP
+
+
 PostDown = iptables -D INPUT -p udp --dport ${SERVER_PORT} -j ACCEPT
-PostDown = iptables -D FORWARD -i ${SERVER_PUB_NIC} -o ${SERVER_WG_NIC} -j ACCEPT
-PostDown = iptables -D FORWARD -i ${SERVER_WG_NIC} -j ACCEPT
-PostDown = iptables -t nat -D POSTROUTING -o ${SERVER_PUB_NIC} -j MASQUERADE
-PostDown = ip6tables -D FORWARD -i ${SERVER_WG_NIC} -j ACCEPT
-PostDown = ip6tables -t nat -D POSTROUTING -o ${SERVER_PUB_NIC} -j MASQUERADE" >>"/etc/wireguard/${SERVER_WG_NIC}.conf"
+PostDown = iptables -D INPUT -i ${SERVER_WG_NIC} ! -p icmp -j DROP
+PostDown = iptables -D OUTPUT -o ${SERVER_WG_NIC} ! -p icmp -j DROP
+
+# Cleanup the FORWARD_WG2HOP chain.
+PostDown = iptables -D FORWARD -j FORWARD_WG2HOP
+PostDown = iptables -F FORWARD_WG2HOP
+PostDown = iptables -X FORWARD_WG2HOP" >>"/etc/wireguard/${SERVER_WG_NIC}.conf"
 	fi
 
 	# Enable routing on the server
