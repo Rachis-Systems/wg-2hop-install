@@ -236,7 +236,7 @@ SERVER_PRIV_KEY=${SERVER_PRIV_KEY}
 SERVER_PUB_KEY=${SERVER_PUB_KEY}
 CLIENT_DNS_1=${CLIENT_DNS_1}
 CLIENT_DNS_2=${CLIENT_DNS_2}
-ALLOWED_IPS=${ALLOWED_IPS}" >/etc/wireguard/params
+ALLOWED_IPS=${ALLOWED_IPS}" >/etc/wireguard/params_2hop
 
 	# Add server interface
 	echo "[Interface]
@@ -266,7 +266,7 @@ PostDown = ip6tables -t nat -D POSTROUTING -o ${SERVER_PUB_NIC} -j MASQUERADE" >
 
 	# Enable routing on the server
 	echo "net.ipv4.ip_forward = 1
-net.ipv6.conf.all.forwarding = 1" >/etc/sysctl.d/wg.conf
+net.ipv6.conf.all.forwarding = 1" >/etc/sysctl.d/wg_2hop.conf
 
 	sysctl --system
 
@@ -472,7 +472,7 @@ function uninstallWg() {
 		fi
 
 		rm -rf /etc/wireguard
-		rm -f /etc/sysctl.d/wg.conf
+		rm -f /etc/sysctl.d/wg_2hop.conf
 
 		# Reload sysctl
 		sysctl --system
@@ -532,8 +532,8 @@ function manageMenu() {
 initialCheck
 
 # Check if WireGuard is already installed and load params
-if [[ -e /etc/wireguard/params ]]; then
-	source /etc/wireguard/params
+if [[ -e /etc/wireguard/params_2hop ]]; then
+	source /etc/wireguard/params_2hop
 	manageMenu
 else
 	installWireGuard
