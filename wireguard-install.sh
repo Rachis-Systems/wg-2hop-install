@@ -143,7 +143,7 @@ function installQuestions() {
 	done
 
 	until [[ ${SERVER_WG_IPV6} =~ ^([a-f0-9]{1,4}:){3,4}: ]]; do
-		read -rp "Server WireGuard IPv6: " -e -i fd42:42:42::1 SERVER_WG_IPV6
+		read -rp "Server WireGuard IPv6: " -e -i fd42:42:40::1 SERVER_WG_IPV6
 	done
 
 	# Generate random number within private ports range
