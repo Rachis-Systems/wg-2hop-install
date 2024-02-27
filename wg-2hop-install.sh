@@ -78,13 +78,6 @@ function checkOS() {
 	fi
 }
 
-function checkFirewall() {
-	if pgrep firewalld; then
-		echo -e "${RED}firewalld is currently unsupported.\n${NC}"
-		exit 1
-	fi
-}
-
 function getHomeDirForClient() {
 	local CLIENT_NAME=$1
 
@@ -117,7 +110,6 @@ function initialCheck() {
 	isRoot
 	checkVirt
 	checkOS
-	checkFirewall
 }
 
 function installQuestions() {
@@ -256,11 +248,44 @@ PrivateKey = ${SERVER_PRIV_KEY}" >"/etc/wireguard/${SERVER_WG_NIC}.conf"
 	BASE_IPV4=$(echo "$SERVER_WG_IPV4" | awk -F '.' '{ print $1"."$2"."$3 }')
 
 	if pgrep firewalld; then
-		FIREWALLD_IPV4_ADDRESS=$(echo "${SERVER_WG_IPV4}" | cut -d"." -f1-3)".0"
-		FIREWALLD_IPV6_ADDRESS=$(echo "${SERVER_WG_IPV6}" | sed 's/:[^:]*$/:0/')
-		# FIXME: firewalld support
-		echo "PostUp = firewall-cmd --add-port ${SERVER_PORT}/udp && firewall-cmd --add-rich-rule='rule family=ipv4 source address=${FIREWALLD_IPV4_ADDRESS}/24 masquerade' && firewall-cmd --add-rich-rule='rule family=ipv6 source address=${FIREWALLD_IPV6_ADDRESS}/24 masquerade'
-PostDown = firewall-cmd --remove-port ${SERVER_PORT}/udp && firewall-cmd --remove-rich-rule='rule family=ipv4 source address=${FIREWALLD_IPV4_ADDRESS}/24 masquerade' && firewall-cmd --remove-rich-rule='rule family=ipv6 source address=${FIREWALLD_IPV6_ADDRESS}/24 masquerade'" >>"/etc/wireguard/${SERVER_WG_NIC}.conf"
+		echo "
+# Allow connecting to the VPN.
+PostUp = firewall-cmd --add-port '${SERVER_PORT}/udp'
+
+# Secure the server (relay) from the VPN.
+PostUp = firewall-cmd --direct --add-rule ipv4 filter INPUT 0 -i ${SERVER_WG_NIC} ! -p icmp -j DROP
+
+# Prevent the server (relay) from intervening with the VPN.
+PostUp = firewall-cmd --direct --add-rule ipv4 filter OUTPUT 0 -o ${SERVER_WG_NIC} ! -p icmp -j DROP
+
+# Setup custom chain for the FORWARD rules.
+PostUp = firewall-cmd --direct --add-chain ipv4 filter FORWARD_WG2HOP
+PostUp = firewall-cmd --direct --add-rule ipv4 filter FORWARD 0 -j FORWARD_WG2HOP
+
+# Allow the internet traffic through the VPN.
+# The AllowedIPs fields in ${SERVER_WG_NIC}.conf will ensure they go to the right place and nowhere else.
+PostUp = firewall-cmd --direct --add-rule ipv4 filter FORWARD_WG2HOP 0 ! -s ${BASE_IPV4}.0/24 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -j ACCEPT
+PostUp = firewall-cmd --direct --add-rule ipv4 filter FORWARD_WG2HOP 0 ! -d ${BASE_IPV4}.0/24 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -j ACCEPT
+
+# Allow pinging the special client.
+PostUp = firewall-cmd --direct --add-rule ipv4 filter FORWARD_WG2HOP 0 -d ${BASE_IPV4}.2/32 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -p icmp -j ACCEPT
+PostUp = firewall-cmd --direct --add-rule ipv4 filter FORWARD_WG2HOP 0 -s ${BASE_IPV4}.2/32 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -p icmp -j ACCEPT
+
+# Disallow anything else related to the VPN.
+PostUp = firewall-cmd --direct --add-rule ipv4 filter FORWARD_WG2HOP 10 -i ${SERVER_WG_NIC} -j DROP
+PostUp = firewall-cmd --direct --add-rule ipv4 filter FORWARD_WG2HOP 10 -o ${SERVER_WG_NIC} -j DROP
+
+
+PostDown = firewall-cmd --remove-port '${SERVER_PORT}/udp'
+PostDown = firewall-cmd --direct --remove-rule ipv4 filter INPUT 0 -i ${SERVER_WG_NIC} ! -p icmp -j DROP
+PostDown = firewall-cmd --direct ipv4 filter OUTPUT 0 -o ${SERVER_WG_NIC} ! -p icmp -j DROP
+
+# Cleanup the FORWARD_WG2HOP chain.
+PostDown = firewall-cmd --direct --remove-rule ipv4 filter FORWARD 0 -j FORWARD_WG2HOP
+PostDown = firewall-cmd --direct --remove-rules ipv4 filter FORWARD_WG2HOP
+PostDown = firewall-cmd --direct --remove-chain ipv4 filter FORWARD_WG2HOP
+" >>"/etc/wireguard/${SERVER_WG_NIC}.conf"
+
 	else
 		echo "
 # Allow connecting to the VPN.
@@ -299,6 +324,7 @@ PostDown = iptables -D FORWARD -j FORWARD_WG2HOP
 PostDown = iptables -F FORWARD_WG2HOP
 PostDown = iptables -X FORWARD_WG2HOP
 " >>"/etc/wireguard/${SERVER_WG_NIC}.conf"
+
 	fi
 
 	# Enable routing on the server
