@@ -78,6 +78,13 @@ function checkOS() {
 	fi
 }
 
+function checkFirewall() {
+	if pgrep firewalld; then
+		echo -e "${RED}firewalld is currently unsupported.\n${NC}"
+		exit 1
+	fi
+}
+
 function getHomeDirForClient() {
 	local CLIENT_NAME=$1
 
@@ -110,6 +117,7 @@ function initialCheck() {
 	isRoot
 	checkVirt
 	checkOS
+	checkFirewall
 }
 
 function installQuestions() {
