@@ -416,6 +416,8 @@ Endpoint = ${ENDPOINT}" >"${HOME_DIR}/${SERVER_WG_NIC}-client-${CLIENT_NAME}.con
 
 		# Allow traffic into any peer in the VPN.
 		echo -e "\nAllowedIPs = ${BASE_IPV4}.0/24, ${BASE_IPV6}::/64" >>"${HOME_DIR}/${SERVER_WG_NIC}-client-${CLIENT_NAME}.conf"
+		# Keep the connection alive.
+		echo -e "\nPersistentKeepalive = 25" >>"${HOME_DIR}/${SERVER_WG_NIC}-client-${CLIENT_NAME}.conf"
 	else
 		# This is a normal client/peer in the VPN.
 		
