@@ -381,7 +381,7 @@ function newClient() {
 	done
 
 	for DOT_IP in {2..254}; do
-		DOT_EXISTS=$(grep -c "${SERVER_WG_IPV4::-1}${DOT_IP}" "/etc/wireguard/${SERVER_WG_NIC}.conf")
+		DOT_EXISTS=$(grep -c "AllowedIPs = ${SERVER_WG_IPV4::-1}${DOT_IP}" "/etc/wireguard/${SERVER_WG_NIC}.conf")
 		if [[ ${DOT_EXISTS} == '0' ]]; then
 			break
 		fi
@@ -397,7 +397,7 @@ function newClient() {
 	until [[ ${IPV4_EXISTS} == '0' ]]; do
 		read -rp "Client WireGuard IPv4: ${BASE_IPV4}." -e -i "${DOT_IP}" DOT_IP
 		CLIENT_WG_IPV4="${BASE_IPV4}.${DOT_IP}"
-		IPV4_EXISTS=$(grep -c "$CLIENT_WG_IPV4/32" "/etc/wireguard/${SERVER_WG_NIC}.conf")
+		IPV4_EXISTS=$(grep -c "AllowedIPs = $CLIENT_WG_IPV4" "/etc/wireguard/${SERVER_WG_NIC}.conf")
 
 		if [[ ${IPV4_EXISTS} != 0 ]]; then
 			echo ""
