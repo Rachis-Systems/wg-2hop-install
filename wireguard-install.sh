@@ -359,10 +359,10 @@ function newClient() {
 		exit 1
 	fi
 
-	BASE_IP=$(echo "$SERVER_WG_IPV4" | awk -F '.' '{ print $1"."$2"."$3 }')
+	BASE_IPV4=$(echo "$SERVER_WG_IPV4" | awk -F '.' '{ print $1"."$2"."$3 }')
 	until [[ ${IPV4_EXISTS} == '0' ]]; do
-		read -rp "Client WireGuard IPv4: ${BASE_IP}." -e -i "${DOT_IP}" DOT_IP
-		CLIENT_WG_IPV4="${BASE_IP}.${DOT_IP}"
+		read -rp "Client WireGuard IPv4: ${BASE_IPV4}." -e -i "${DOT_IP}" DOT_IP
+		CLIENT_WG_IPV4="${BASE_IPV4}.${DOT_IP}"
 		IPV4_EXISTS=$(grep -c "$CLIENT_WG_IPV4/32" "/etc/wireguard/${SERVER_WG_NIC}.conf")
 
 		if [[ ${IPV4_EXISTS} != 0 ]]; then
@@ -372,10 +372,10 @@ function newClient() {
 		fi
 	done
 
-	BASE_IP=$(echo "$SERVER_WG_IPV6" | awk -F '::' '{ print $1 }')
+	BASE_IPV6=$(echo "$SERVER_WG_IPV6" | awk -F '::' '{ print $1 }')
 	until [[ ${IPV6_EXISTS} == '0' ]]; do
-		read -rp "Client WireGuard IPv6: ${BASE_IP}::" -e -i "${DOT_IP}" DOT_IP
-		CLIENT_WG_IPV6="${BASE_IP}::${DOT_IP}"
+		read -rp "Client WireGuard IPv6: ${BASE_IPV6}::" -e -i "${DOT_IP}" DOT_IP
+		CLIENT_WG_IPV6="${BASE_IPV6}::${DOT_IP}"
 		IPV6_EXISTS=$(grep -c "${CLIENT_WG_IPV6}/128" "/etc/wireguard/${SERVER_WG_NIC}.conf")
 
 		if [[ ${IPV6_EXISTS} != 0 ]]; then
@@ -401,16 +401,39 @@ DNS = ${CLIENT_DNS_1},${CLIENT_DNS_2}
 [Peer]
 PublicKey = ${SERVER_PUB_KEY}
 PresharedKey = ${CLIENT_PRE_SHARED_KEY}
-Endpoint = ${ENDPOINT}
-AllowedIPs = ${ALLOWED_IPS}" >"${HOME_DIR}/${SERVER_WG_NIC}-client-${CLIENT_NAME}.conf"
+Endpoint = ${ENDPOINT}" >"${HOME_DIR}/${SERVER_WG_NIC}-client-${CLIENT_NAME}.conf"
+
+	if [[ ${CLIENT_WG_IPV4} == "${BASE_IPV4}.2" ]]; then
+		# This is the 2-hop gateway of the VPN.
+
+		# Allow traffic into any peer in the VPN.
+		echo -e "\nAllowedIPs = ${BASE_IPV4}.0/24, ${BASE_IPV6}::/64" >>"${HOME_DIR}/${SERVER_WG_NIC}-client-${CLIENT_NAME}.conf"
+	else
+		# This is a normal client/peer in the VPN.
+		
+		# Tunnel all traffic through the VPN with kill-switch activated.
+		echo -e "\nAllowedIPs = ${ALLOWED_IPS}" >>"${HOME_DIR}/${SERVER_WG_NIC}-client-${CLIENT_NAME}.conf"
+	fi
 
 	# Add the client as a peer to the server
 	echo -e "\n### Client ${CLIENT_NAME}
 [Peer]
 PublicKey = ${CLIENT_PUB_KEY}
-PresharedKey = ${CLIENT_PRE_SHARED_KEY}
-AllowedIPs = ${CLIENT_WG_IPV4}/32,${CLIENT_WG_IPV6}/128" >>"/etc/wireguard/${SERVER_WG_NIC}.conf"
+PresharedKey = ${CLIENT_PRE_SHARED_KEY}" >>"/etc/wireguard/${SERVER_WG_NIC}.conf"
 
+	if [[ ${CLIENT_WG_IPV4} == "${BASE_IPV4}.2" ]]; then
+		# This is the 2-hop gateway of the VPN.
+
+		# Allow all traffic through it (the firewall would limit it)
+		# and don't activate the kill-switch.
+		echo -e "\nAllowedIPs = 0.0.0.0/1, 128.0.0.0/1, ::/1, 8000::/1" >>"/etc/wireguard/${SERVER_WG_NIC}.conf"
+	else
+		# This is a normal client/peer in the VPN.
+		
+		# Allow it's own traffic only.
+		echo -e "\nAllowedIPs = ${CLIENT_WG_IPV4}/32,${CLIENT_WG_IPV6}/128" >>"/etc/wireguard/${SERVER_WG_NIC}.conf"
+	fi
+	
 	wg syncconf "${SERVER_WG_NIC}" <(wg-quick strip "${SERVER_WG_NIC}")
 
 	# Generate QR code if qrencode is installed
