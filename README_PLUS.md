@@ -5,6 +5,7 @@
 - Added a warning when the script is executed to note the user of the script being modified.
 - Added an option for soft uninstallation, deletes the configuration only.
 - **Added a check to reject systems with `firewalld` used.**
+- Rename to `wg-2hop-install.sh`.
 - Changed the default interface name from `wg0` into `wg2hop`.
 - Changed the default subnet.
     - IPv4 from `10.66.66.0/24` into `10.66.88.0/24`.
