@@ -142,10 +142,6 @@ function installQuestions() {
 		read -rp "Server WireGuard IPv4: " -e -i 10.66.88.1 SERVER_WG_IPV4
 	done
 
-	until [[ ${SERVER_WG_IPV6} =~ ^([a-f0-9]{1,4}:){3,4}: ]]; do
-		read -rp "Server WireGuard IPv6: " -e -i fd42:42:40::1 SERVER_WG_IPV6
-	done
-
 	# Generate random number within private ports range
 	RANDOM_PORT=$(shuf -i49152-65535 -n1)
 	until [[ ${SERVER_PORT} =~ ^[0-9]+$ ]] && [ "${SERVER_PORT}" -ge 1 ] && [ "${SERVER_PORT}" -le 65535 ]; do
@@ -230,7 +226,6 @@ function installWireGuard() {
 SERVER_PUB_NIC=${SERVER_PUB_NIC}
 SERVER_WG_NIC=${SERVER_WG_NIC}
 SERVER_WG_IPV4=${SERVER_WG_IPV4}
-SERVER_WG_IPV6=${SERVER_WG_IPV6}
 SERVER_PORT=${SERVER_PORT}
 SERVER_PRIV_KEY=${SERVER_PRIV_KEY}
 SERVER_PUB_KEY=${SERVER_PUB_KEY}
@@ -240,7 +235,7 @@ ALLOWED_IPS=${ALLOWED_IPS}" >/etc/wireguard/params_2hop
 
 	# Add server interface
 	echo "[Interface]
-Address = ${SERVER_WG_IPV4}/24,${SERVER_WG_IPV6}/64
+Address = ${SERVER_WG_IPV4}/24
 ListenPort = ${SERVER_PORT}
 PrivateKey = ${SERVER_PRIV_KEY}" >"/etc/wireguard/${SERVER_WG_NIC}.conf"
 
@@ -328,8 +323,7 @@ PostDown = iptables -X FORWARD_WG2HOP
 	fi
 
 	# Enable routing on the server
-	echo "net.ipv4.ip_forward = 1
-net.ipv6.conf.all.forwarding = 1" >/etc/sysctl.d/wg_2hop.conf
+	echo "net.ipv4.ip_forward = 1" >/etc/sysctl.d/wg_2hop.conf
 
 	sysctl --system
 
@@ -406,19 +400,6 @@ function newClient() {
 		fi
 	done
 
-	BASE_IPV6=$(echo "$SERVER_WG_IPV6" | awk -F '::' '{ print $1 }')
-	until [[ ${IPV6_EXISTS} == '0' ]]; do
-		read -rp "Client WireGuard IPv6: ${BASE_IPV6}::" -e -i "${DOT_IP}" DOT_IP
-		CLIENT_WG_IPV6="${BASE_IPV6}::${DOT_IP}"
-		IPV6_EXISTS=$(grep -c "${CLIENT_WG_IPV6}/128" "/etc/wireguard/${SERVER_WG_NIC}.conf")
-
-		if [[ ${IPV6_EXISTS} != 0 ]]; then
-			echo ""
-			echo -e "${ORANGE}A client with the specified IPv6 was already created, please choose another IPv6.${NC}"
-			echo ""
-		fi
-	done
-
 	# Generate key pair for the client
 	CLIENT_PRIV_KEY=$(wg genkey)
 	CLIENT_PUB_KEY=$(echo "${CLIENT_PRIV_KEY}" | wg pubkey)
@@ -429,7 +410,7 @@ function newClient() {
 	# Create client file and add the server as a peer
 	echo "[Interface]
 PrivateKey = ${CLIENT_PRIV_KEY}
-Address = ${CLIENT_WG_IPV4}/32,${CLIENT_WG_IPV6}/128
+Address = ${CLIENT_WG_IPV4}/32
 DNS = ${CLIENT_DNS_1},${CLIENT_DNS_2}
 
 [Peer]
@@ -441,7 +422,7 @@ Endpoint = ${ENDPOINT}" >"${HOME_DIR}/${SERVER_WG_NIC}-client-${CLIENT_NAME}.con
 		# This is the 2-hop gateway of the VPN.
 
 		# Allow traffic into any peer in the VPN.
-		echo -e "\nAllowedIPs = ${BASE_IPV4}.0/24, ${BASE_IPV6}::/64" >>"${HOME_DIR}/${SERVER_WG_NIC}-client-${CLIENT_NAME}.conf"
+		echo -e "\nAllowedIPs = ${BASE_IPV4}.0/24" >>"${HOME_DIR}/${SERVER_WG_NIC}-client-${CLIENT_NAME}.conf"
 		# Keep the connection alive.
 		echo -e "\nPersistentKeepalive = 25" >>"${HOME_DIR}/${SERVER_WG_NIC}-client-${CLIENT_NAME}.conf"
 	else
@@ -467,7 +448,7 @@ PresharedKey = ${CLIENT_PRE_SHARED_KEY}" >>"/etc/wireguard/${SERVER_WG_NIC}.conf
 		# This is a normal client/peer in the VPN.
 		
 		# Allow it's own traffic only.
-		echo -e "\nAllowedIPs = ${CLIENT_WG_IPV4}/32,${CLIENT_WG_IPV6}/128" >>"/etc/wireguard/${SERVER_WG_NIC}.conf"
+		echo -e "\nAllowedIPs = ${CLIENT_WG_IPV4}/32" >>"/etc/wireguard/${SERVER_WG_NIC}.conf"
 	fi
 	
 	wg syncconf "${SERVER_WG_NIC}" <(wg-quick strip "${SERVER_WG_NIC}")
