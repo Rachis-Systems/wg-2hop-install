@@ -248,14 +248,14 @@ PrivateKey = ${SERVER_PRIV_KEY}" >"/etc/wireguard/${SERVER_WG_NIC}.conf"
 PostUp = firewall-cmd --add-port '${SERVER_PORT}/udp'
 
 # Secure the server (relay) from the VPN.
-PostUp = firewall-cmd --direct --add-rule ipv4 filter INPUT 0 -i ${SERVER_WG_NIC} ! -p icmp -j DROP
+PostUp = firewall-cmd --direct --add-rule ipv4 filter INPUT -1 -i ${SERVER_WG_NIC} ! -p icmp -j DROP
 
 # Prevent the server (relay) from intervening with the VPN.
-PostUp = firewall-cmd --direct --add-rule ipv4 filter OUTPUT 0 -o ${SERVER_WG_NIC} ! -p icmp -j DROP
+PostUp = firewall-cmd --direct --add-rule ipv4 filter OUTPUT -1 -o ${SERVER_WG_NIC} ! -p icmp -j DROP
 
 # Setup custom chain for the FORWARD rules.
 PostUp = firewall-cmd --direct --add-chain ipv4 filter FORWARD_WG2HOP
-PostUp = firewall-cmd --direct --add-rule ipv4 filter FORWARD 0 -j FORWARD_WG2HOP
+PostUp = firewall-cmd --direct --add-rule ipv4 filter FORWARD -1 -j FORWARD_WG2HOP
 
 # Allow the internet traffic through the VPN.
 # The AllowedIPs fields in ${SERVER_WG_NIC}.conf will ensure they go to the right place and nowhere else.
@@ -276,7 +276,7 @@ PostDown = firewall-cmd --direct --remove-rule ipv4 filter INPUT 0 -i ${SERVER_W
 PostDown = firewall-cmd --direct --remove-rule ipv4 filter OUTPUT 0 -o ${SERVER_WG_NIC} ! -p icmp -j DROP
 
 # Cleanup the FORWARD_WG2HOP chain.
-PostDown = firewall-cmd --direct --remove-rule ipv4 filter FORWARD 0 -j FORWARD_WG2HOP
+PostDown = firewall-cmd --direct --remove-rule ipv4 filter FORWARD -1 -j FORWARD_WG2HOP
 PostDown = firewall-cmd --direct --remove-rules ipv4 filter FORWARD_WG2HOP
 PostDown = firewall-cmd --direct --remove-chain ipv4 filter FORWARD_WG2HOP
 " >>"/etc/wireguard/${SERVER_WG_NIC}.conf"
@@ -443,7 +443,7 @@ PresharedKey = ${CLIENT_PRE_SHARED_KEY}" >>"/etc/wireguard/${SERVER_WG_NIC}.conf
 
 		# Allow all traffic through it (the firewall would limit it)
 		# and don't activate the kill-switch.
-		echo -e "\nAllowedIPs = 0.0.0.0/1, 128.0.0.0/1, ::/1, 8000::/1" >>"/etc/wireguard/${SERVER_WG_NIC}.conf"
+		echo -e "\nAllowedIPs = 0.0.0.0/1, 128.0.0.0/1" >>"/etc/wireguard/${SERVER_WG_NIC}.conf"
 	else
 		# This is a normal client/peer in the VPN.
 		
