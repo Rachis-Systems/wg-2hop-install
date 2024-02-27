@@ -490,6 +490,35 @@ function revokeClient() {
 	wg syncconf "${SERVER_WG_NIC}" <(wg-quick strip "${SERVER_WG_NIC}")
 }
 
+function removeConfig() {
+	echo ""
+	echo -e "\n${RED}WARNING: This will remove all the configuration files and delete the tunnel!${NC}"
+	echo -e "${ORANGE}Please backup the /etc/wireguard directory if you want to keep your configuration files.\n${NC}"
+	echo -e "${GREEN}However wireguard will still be installed in the system incase other tunnels use it.\n${NC}"
+	read -rp "Do you really want to remove all configuration? [y/n]: " -e REMOVE
+	REMOVE=${REMOVE:-n}
+	if [[ $REMOVE == 'y' ]]; then
+		checkOS
+
+		systemctl stop "wg-quick@${SERVER_WG_NIC}"
+		systemctl disable "wg-quick@${SERVER_WG_NIC}"
+
+		rm -f /etc/wireguard/params_2hop
+		rm -f "/etc/wireguard/${SERVER_WG_NIC}.conf"
+
+		rm -f /etc/sysctl.d/wg_2hop.conf
+
+		# Reload sysctl
+		sysctl --system
+
+		echo "Configuration removed successfully."
+		exit 0
+	else
+		echo ""
+		echo "Removal aborted!"
+	fi
+}
+
 function uninstallWg() {
 	echo ""
 	echo -e "\n${RED}WARNING: This will uninstall WireGuard and remove all the configuration files!${NC}"
@@ -556,8 +585,9 @@ function manageMenu() {
 	echo "   1) Add a new user"
 	echo "   2) List all users"
 	echo "   3) Revoke existing user"
-	echo "   4) Uninstall WireGuard"
-	echo "   5) Exit"
+	echo "   4) Remove configuration (soft-uninstall)"
+	echo "   5) Uninstall WireGuard"
+	echo "   6) Exit"
 	until [[ ${MENU_OPTION} =~ ^[1-5]$ ]]; do
 		read -rp "Select an option [1-5]: " MENU_OPTION
 	done
@@ -572,9 +602,12 @@ function manageMenu() {
 		revokeClient
 		;;
 	4)
-		uninstallWg
+		removeConfig
 		;;
 	5)
+		uninstallWg
+		;;
+	6)
 		exit 0
 		;;
 	esac
