@@ -16,6 +16,7 @@
 - The first client (with ip `10.66.88.2`) has customized configuration on the server side, client side and the firewall.
     - The subnet `10.66.88.0` is not hardcoded, but the subnet mask must be always `/24`.
     - Customized `AllowedIPs` and added `PersistentKeepalive`.
+- Change how used IPs are detected.
 
 ## Footprint
 
