@@ -1,4 +1,18 @@
 
+## Modifications on the original script
+
+- Changed the repository url in the script to `https://github.com/rami-sabbagh/wireguard-install`.
+- Added a warning when the script is executed to note the user of the script being modified.
+- Changed the default interface name from `wg0` into `wg2hop`.
+- Changed the default subnet.
+    - IPv4 from `10.66.66.0/24` into `10.66.88.0/24`.
+    - IPv6 from `fd42:42:42::/64` into `fd42:42:40::/64`.
+- Changed configuration filenames to avoid conflict with the original script.
+    - Changed `/etc/wireguard/params` into `/etc/wireguard/params_2hop`.
+- Changed the `PostUp`&`PostDown` options in the server config to configure the firewall differently.
+- The first client (with ip `10.66.88.2`) has customized configuration on the server side, client side and the firewall.
+    - The subnet `10.66.88.0` is not hardcoded, but the subnet mask must be always `/24`.
+
 ## Footprint
 
 _The modifications left on the system after execution._
