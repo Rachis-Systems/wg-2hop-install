@@ -9,7 +9,7 @@
 - Changed the default interface name from `wg0` into `wg2hop`.
 - Changed the default subnet.
     - IPv4 from `10.66.66.0/24` into `10.66.88.0/24`.
-    - IPv6 from `fd42:42:42::/64` into `fd42:42:40::/64`.
+    - ~~IPv6 from `fd42:42:42::/64` into `fd42:42:40::/64`.~~ (IPv6 support has been removed later)
 - Changed configuration filenames to avoid conflict with the original script.
     - Changed `/etc/wireguard/params` into `/etc/wireguard/params_2hop`.
 - Changed the `PostUp`&`PostDown` options in the server config to configure the firewall differently.

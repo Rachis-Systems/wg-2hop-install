@@ -422,14 +422,14 @@ Endpoint = ${ENDPOINT}" >"${HOME_DIR}/${SERVER_WG_NIC}-client-${CLIENT_NAME}.con
 		# This is the 2-hop gateway of the VPN.
 
 		# Allow traffic into any peer in the VPN.
-		echo -e "\nAllowedIPs = ${BASE_IPV4}.0/24" >>"${HOME_DIR}/${SERVER_WG_NIC}-client-${CLIENT_NAME}.conf"
+		echo -e "AllowedIPs = ${BASE_IPV4}.0/24" >>"${HOME_DIR}/${SERVER_WG_NIC}-client-${CLIENT_NAME}.conf"
 		# Keep the connection alive.
-		echo -e "\nPersistentKeepalive = 25" >>"${HOME_DIR}/${SERVER_WG_NIC}-client-${CLIENT_NAME}.conf"
+		echo -e "PersistentKeepalive = 25" >>"${HOME_DIR}/${SERVER_WG_NIC}-client-${CLIENT_NAME}.conf"
 	else
 		# This is a normal client/peer in the VPN.
 		
 		# Tunnel all traffic through the VPN with kill-switch activated.
-		echo -e "\nAllowedIPs = ${ALLOWED_IPS}" >>"${HOME_DIR}/${SERVER_WG_NIC}-client-${CLIENT_NAME}.conf"
+		echo -e "AllowedIPs = ${ALLOWED_IPS}" >>"${HOME_DIR}/${SERVER_WG_NIC}-client-${CLIENT_NAME}.conf"
 	fi
 
 	# Add the client as a peer to the server
@@ -443,12 +443,12 @@ PresharedKey = ${CLIENT_PRE_SHARED_KEY}" >>"/etc/wireguard/${SERVER_WG_NIC}.conf
 
 		# Allow all traffic through it (the firewall would limit it)
 		# and don't activate the kill-switch.
-		echo -e "\nAllowedIPs = 0.0.0.0/1, 128.0.0.0/1" >>"/etc/wireguard/${SERVER_WG_NIC}.conf"
+		echo -e "AllowedIPs = 0.0.0.0/1, 128.0.0.0/1" >>"/etc/wireguard/${SERVER_WG_NIC}.conf"
 	else
 		# This is a normal client/peer in the VPN.
 		
 		# Allow it's own traffic only.
-		echo -e "\nAllowedIPs = ${CLIENT_WG_IPV4}/32" >>"/etc/wireguard/${SERVER_WG_NIC}.conf"
+		echo -e "AllowedIPs = ${CLIENT_WG_IPV4}/32" >>"/etc/wireguard/${SERVER_WG_NIC}.conf"
 	fi
 	
 	wg syncconf "${SERVER_WG_NIC}" <(wg-quick strip "${SERVER_WG_NIC}")
@@ -510,7 +510,7 @@ function revokeClient() {
 function removeConfig() {
 	echo ""
 	echo -e "\n${RED}WARNING: This will remove all the configuration files and delete the tunnel!${NC}"
-	echo -e "${ORANGE}Please backup the /etc/wireguard directory if you want to keep your configuration files.\n${NC}"
+	echo -e "${ORANGE}Please backup the /etc/wireguard directory if you want to keep your configuration files.${NC}"
 	echo -e "${GREEN}However wireguard will still be installed in the system incase other tunnels use it.\n${NC}"
 	read -rp "Do you really want to remove all configuration? [y/n]: " -e REMOVE
 	REMOVE=${REMOVE:-n}
