@@ -1,8 +1,10 @@
 
 ## Modifications on the original script
 
-- Changed the repository url in the script to `https://github.com/rami-sabbagh/wireguard-install`.
+- Changed the repository url in the script to `https://github.com/rami-sabbagh/wg-2hop-install`.
 - Added a warning when the script is executed to note the user of the script being modified.
+- Added an option for soft uninstallation, deletes the configuration only.
+- **Added a check to reject systems with `firewalld` used.**
 - Changed the default interface name from `wg0` into `wg2hop`.
 - Changed the default subnet.
     - IPv4 from `10.66.66.0/24` into `10.66.88.0/24`.
