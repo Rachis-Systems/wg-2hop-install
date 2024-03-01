@@ -138,10 +138,6 @@ function installQuestions() {
 		read -rp "WireGuard interface name: " -e -i wg2hop SERVER_WG_NIC
 	done
 
-	until [[ ${SERVER_WG_IPV4} =~ ^([0-9]{1,3}\.){3} ]]; do
-		read -rp "Server WireGuard IPv4: " -e -i 10.66.88.1 SERVER_WG_IPV4
-	done
-
 	# Generate random number within private ports range
 	RANDOM_PORT=$(shuf -i49152-65535 -n1)
 	until [[ ${SERVER_PORT} =~ ^[0-9]+$ ]] && [ "${SERVER_PORT}" -ge 1 ] && [ "${SERVER_PORT}" -le 65535 ]; do
@@ -212,7 +208,6 @@ function installWireGuard() {
 	elif [[ ${OS} == 'arch' ]]; then
 		pacman -S --needed --noconfirm wireguard-tools qrencode
 	fi
-
 	# Make sure the directory exists (this does not seem the be the case on fedora)
 	mkdir /etc/wireguard >/dev/null 2>&1
 
@@ -225,7 +220,6 @@ function installWireGuard() {
 	echo "SERVER_PUB_IP=${SERVER_PUB_IP}
 SERVER_PUB_NIC=${SERVER_PUB_NIC}
 SERVER_WG_NIC=${SERVER_WG_NIC}
-SERVER_WG_IPV4=${SERVER_WG_IPV4}
 SERVER_PORT=${SERVER_PORT}
 SERVER_PRIV_KEY=${SERVER_PRIV_KEY}
 SERVER_PUB_KEY=${SERVER_PUB_KEY}
@@ -240,7 +234,6 @@ ListenPort = ${SERVER_PORT}
 PrivateKey = ${SERVER_PRIV_KEY}" >"/etc/wireguard/${SERVER_WG_NIC}.conf"
 
 	# Setup firewall rules
-	BASE_IPV4=$(echo "$SERVER_WG_IPV4" | awk -F '.' '{ print $1"."$2"."$3 }')
 
 	if pgrep firewalld; then
 		echo "
@@ -259,12 +252,12 @@ PostUp = firewall-cmd --direct --add-rule ipv4 filter FORWARD -1 -j FORWARD_WG2H
 
 # Allow the internet traffic through the VPN.
 # The AllowedIPs fields in ${SERVER_WG_NIC}.conf will ensure they go to the right place and nowhere else.
-PostUp = firewall-cmd --direct --add-rule ipv4 filter FORWARD_WG2HOP 0 ! -s ${BASE_IPV4}.0/24 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -j ACCEPT
-PostUp = firewall-cmd --direct --add-rule ipv4 filter FORWARD_WG2HOP 0 ! -d ${BASE_IPV4}.0/24 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -j ACCEPT
+PostUp = firewall-cmd --direct --add-rule ipv4 filter FORWARD_WG2HOP 0 ! -s 192.168.137.0/24 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -j ACCEPT
+PostUp = firewall-cmd --direct --add-rule ipv4 filter FORWARD_WG2HOP 0 ! -d 192.168.137.0/24 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -j ACCEPT
 
 # Allow pinging the special client.
-PostUp = firewall-cmd --direct --add-rule ipv4 filter FORWARD_WG2HOP 0 -d ${BASE_IPV4}.2/32 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -p icmp -j ACCEPT
-PostUp = firewall-cmd --direct --add-rule ipv4 filter FORWARD_WG2HOP 0 -s ${BASE_IPV4}.2/32 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -p icmp -j ACCEPT
+PostUp = firewall-cmd --direct --add-rule ipv4 filter FORWARD_WG2HOP 0 -d 192.168.137.1/32 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -p icmp -j ACCEPT
+PostUp = firewall-cmd --direct --add-rule ipv4 filter FORWARD_WG2HOP 0 -s 192.168.137.1/32 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -p icmp -j ACCEPT
 
 # Disallow anything else related to the VPN.
 PostUp = firewall-cmd --direct --add-rule ipv4 filter FORWARD_WG2HOP 10 -i ${SERVER_WG_NIC} -j DROP
@@ -298,12 +291,12 @@ PostUp = iptables -A FORWARD -j FORWARD_WG2HOP
 
 # Allow the internet traffic through the VPN.
 # The AllowedIPs fields in ${SERVER_WG_NIC}.conf will ensure they go to the right place and nowhere else.
-PostUp = iptables -A FORWARD_WG2HOP ! -s ${BASE_IPV4}.0/24 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -j ACCEPT
-PostUp = iptables -A FORWARD_WG2HOP ! -d ${BASE_IPV4}.0/24 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -j ACCEPT
+PostUp = iptables -A FORWARD_WG2HOP ! -s 192.168.137.0/24 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -j ACCEPT
+PostUp = iptables -A FORWARD_WG2HOP ! -d 192.168.137.0/24 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -j ACCEPT
 
 # Allow pinging the special client.
-PostUp = iptables -A FORWARD_WG2HOP -d ${BASE_IPV4}.2/32 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -p icmp -j ACCEPT
-PostUp = iptables -A FORWARD_WG2HOP -s ${BASE_IPV4}.2/32 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -p icmp -j ACCEPT
+PostUp = iptables -A FORWARD_WG2HOP -d 192.168.137.1/32 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -p icmp -j ACCEPT
+PostUp = iptables -A FORWARD_WG2HOP -s 192.168.137.1/32 -i ${SERVER_WG_NIC} -o ${SERVER_WG_NIC} -p icmp -j ACCEPT
 
 # Disallow anything else related to the VPN.
 PostUp = iptables -A FORWARD_WG2HOP -i ${SERVER_WG_NIC} -j DROP
@@ -374,8 +367,8 @@ function newClient() {
 		fi
 	done
 
-	for DOT_IP in {2..254}; do
-		DOT_EXISTS=$(grep -c "### IP ${SERVER_WG_IPV4::-1}${DOT_IP}" "/etc/wireguard/${SERVER_WG_NIC}.conf")
+	for DOT_IP in {1..254}; do
+		DOT_EXISTS=$(grep -c "### IP 192.168.137.${DOT_IP}" "/etc/wireguard/${SERVER_WG_NIC}.conf")
 		if [[ ${DOT_EXISTS} == '0' ]]; then
 			break
 		fi
@@ -387,7 +380,7 @@ function newClient() {
 		exit 1
 	fi
 
-	BASE_IPV4=$(echo "$SERVER_WG_IPV4" | awk -F '.' '{ print $1"."$2"."$3 }')
+	BASE_IPV4='192.168.137'
 	until [[ ${IPV4_EXISTS} == '0' ]]; do
 		read -rp "Client WireGuard IPv4: ${BASE_IPV4}." -e -i "${DOT_IP}" DOT_IP
 		CLIENT_WG_IPV4="${BASE_IPV4}.${DOT_IP}"
@@ -427,7 +420,7 @@ Endpoint = ${ENDPOINT}" >"${HOME_DIR}/${SERVER_WG_NIC}-client-${CLIENT_NAME}.con
 		echo -e "PersistentKeepalive = 25" >>"${HOME_DIR}/${SERVER_WG_NIC}-client-${CLIENT_NAME}.conf"
 	else
 		# This is a normal client/peer in the VPN.
-		
+
 		# Tunnel all traffic through the VPN with kill-switch activated.
 		echo -e "AllowedIPs = ${ALLOWED_IPS}" >>"${HOME_DIR}/${SERVER_WG_NIC}-client-${CLIENT_NAME}.conf"
 	fi
@@ -443,15 +436,16 @@ PresharedKey = ${CLIENT_PRE_SHARED_KEY}" >>"/etc/wireguard/${SERVER_WG_NIC}.conf
 		# This is the 2-hop gateway of the VPN.
 
 		# Allow all traffic through it (the firewall would limit it)
+		# except traffic outgoing to a peer on the network.
 		# and don't activate the kill-switch.
-		echo -e "AllowedIPs = 0.0.0.0/1, 128.0.0.0/1" >>"/etc/wireguard/${SERVER_WG_NIC}.conf"
+		echo -e "AllowedIPs = 192.168.137.1/32, 0.0.0.0/1, 128.0.0.0/2, 192.0.0.0/9, 192.128.0.0/11, 192.160.0.0/13, 192.168.0.0/17, 192.168.128.0/21, 192.168.136.0/24, 192.168.138.0/23, 192.168.140.0/22, 192.168.144.0/20, 192.168.160.0/19, 192.168.192.0/18, 192.169.0.0/16, 192.170.0.0/15, 192.172.0.0/14, 192.176.0.0/12, 192.192.0.0/10, 193.0.0.0/8, 194.0.0.0/7, 196.0.0.0/6, 200.0.0.0/5, 208.0.0.0/4, 224.0.0.0/3" >>"/etc/wireguard/${SERVER_WG_NIC}.conf"
 	else
 		# This is a normal client/peer in the VPN.
-		
+
 		# Allow it's own traffic only.
 		echo -e "AllowedIPs = ${CLIENT_WG_IPV4}/32" >>"/etc/wireguard/${SERVER_WG_NIC}.conf"
 	fi
-	
+
 	wg syncconf "${SERVER_WG_NIC}" <(wg-quick strip "${SERVER_WG_NIC}")
 
 	# Generate QR code if qrencode is installed
