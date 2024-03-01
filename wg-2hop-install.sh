@@ -272,8 +272,8 @@ PostUp = firewall-cmd --direct --add-rule ipv4 filter FORWARD_WG2HOP 10 -o ${SER
 
 
 PostDown = firewall-cmd --remove-port '${SERVER_PORT}/udp'
-PostDown = firewall-cmd --direct --remove-rule ipv4 filter INPUT 0 -i ${SERVER_WG_NIC} ! -p icmp -j DROP
-PostDown = firewall-cmd --direct --remove-rule ipv4 filter OUTPUT 0 -o ${SERVER_WG_NIC} ! -p icmp -j DROP
+PostDown = firewall-cmd --direct --remove-rule ipv4 filter INPUT -1 -i ${SERVER_WG_NIC} ! -p icmp -j DROP
+PostDown = firewall-cmd --direct --remove-rule ipv4 filter OUTPUT -1 -o ${SERVER_WG_NIC} ! -p icmp -j DROP
 
 # Cleanup the FORWARD_WG2HOP chain.
 PostDown = firewall-cmd --direct --remove-rule ipv4 filter FORWARD -1 -j FORWARD_WG2HOP
