@@ -215,6 +215,7 @@ function installWireGuard() {
 
 	SERVER_PRIV_KEY=$(wg genkey)
 	SERVER_PUB_KEY=$(echo "${SERVER_PRIV_KEY}" | wg pubkey)
+	ROUTING_TABLE='4224'
 
 	# Save WireGuard settings
 	echo "SERVER_PUB_IP=${SERVER_PUB_IP}
@@ -225,13 +226,19 @@ SERVER_PRIV_KEY=${SERVER_PRIV_KEY}
 SERVER_PUB_KEY=${SERVER_PUB_KEY}
 CLIENT_DNS_1=${CLIENT_DNS_1}
 CLIENT_DNS_2=${CLIENT_DNS_2}
+ROUTING_TABLE=${ROUTING_TABLE}
 ALLOWED_IPS=${ALLOWED_IPS}" >/etc/wireguard/params_2hop
 
 	# Add server interface
 	echo "[Interface]
-Address = ${SERVER_WG_IPV4}/24
+Address = 192.168.137.2/24
 ListenPort = ${SERVER_PORT}
-PrivateKey = ${SERVER_PRIV_KEY}" >"/etc/wireguard/${SERVER_WG_NIC}.conf"
+Table = ${ROUTING_TABLE}
+PrivateKey = ${SERVER_PRIV_KEY}
+
+# Setup the activation of custom routing table.
+PostUp = ip rule add from 192.168.137.0/24 table ${ROUTING_TABLE}
+PostDown = ip rule delete table ${ROUTING_TABLE}" >"/etc/wireguard/${SERVER_WG_NIC}.conf"
 
 	# Setup firewall rules
 
