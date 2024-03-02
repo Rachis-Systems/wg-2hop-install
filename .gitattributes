@@ -1,0 +1,2 @@
+# Linux shell files must used LF regardless of the platform.
+*.sh text eol=lf
