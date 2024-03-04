@@ -71,7 +71,7 @@ Supported distributions:
 Download and execute the script. Answer the questions asked by the script and it will take care of the rest.
 
 ```bash
-curl -O https://raw.githubusercontent.com/rachis-systems/wg-2hop-install/main/wg-2hop-install.sh
+curl -O https://raw.githubusercontent.com/Rachis-Systems/wg-2hop-install/main/wg-2hop-install.sh
 chmod +x wg-2hop-install.sh
 ./wg-2hop-install.sh
 ```
@@ -151,7 +151,7 @@ The script has been modified by [Rami Sabbagh](https://github.com/Rami-Sabbagh/)
 
 ### Modifications done on the script
 
-- Changed the repository url in the script to `https://github.com/rachis-systems/wg-2hop-install`.
+- Changed the repository url in the script to `https://github.com/Rachis-Systems/wg-2hop-install`.
 - Added a warning when the script is executed to note the user of the script being modified.
 - Added an option for soft uninstallation, deletes the configuration only.
 - Rename to `wg-2hop-install.sh`.
