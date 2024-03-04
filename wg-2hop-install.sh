@@ -230,7 +230,8 @@ ROUTING_TABLE=${ROUTING_TABLE}
 ALLOWED_IPS=${ALLOWED_IPS}" >/etc/wireguard/params_2hop
 
 	# Add server interface
-	echo "[Interface]
+	echo "### IP 192.168.137.2
+[Interface]
 Address = 192.168.137.2/24
 ListenPort = ${SERVER_PORT}
 Table = ${ROUTING_TABLE}
