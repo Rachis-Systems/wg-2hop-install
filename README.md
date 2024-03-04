@@ -47,6 +47,12 @@ When the tunnel is active, a custom routing table (`4224`) is used to prevent pa
 
 Within the custom routing table, rules are added to forward the all traffic through the special "gateway" client. Except the traffic with the subnet mask of the VPN.
 
+#### Special VPN IPs
+
+- The IP `192.168.137.1` is hardcoded for the "gateway" client.
+- The IP `192.168.137.2` is for the relay server within the VPN.
+- The rest of IPs are for normal clients routing their traffic through the "gateway" with the help of the relay server.
+
 ## Requirements
 
 Supported distributions:
