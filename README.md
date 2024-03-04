@@ -80,7 +80,7 @@ It will install WireGuard (kernel module and tools) on the server, configure it,
 
 Run the script again to add or remove clients!
 
-### "gateway" Client Configuration
+### "Gateway" Client Configuration
 
 It's the client with IP `192.168.137.1`, which is the first client created using the script by default. But that could be changed by selecting a different IP for the first client.
 
@@ -102,7 +102,7 @@ To setup a Windows client do the following:
 
 ## Script Footprint
 
-_The modifications left on the system after execution._
+_The modifications left on the system after script execution._
 
 - Installs `wireguard iptables resolvconf qrencode` on the system (if Debian/Ubuntu).
 - Creates `/etc/sysctl.d/wg_2hop.conf` for enabling IPv4 packets forwarding on the server.
