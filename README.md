@@ -124,7 +124,7 @@ _The modifications left on the system after script execution._
 - Creates `/etc/sysctl.d/wg_2hop.conf` for enabling IPv4 packets forwarding on the server.
 - The `/etc/wireguard` directory, for storing the server configuration.
     - `/etc/wireguard/params_2hop` for storing the answers of setup questions.
-    - `/etc/wireguard/wg_2hop.conf` the configuration of the server tunnel.
+    - `/etc/wireguard/wg2hop.conf` the configuration of the server tunnel.
 - `~/*.conf` peers (clients) WireGuard configuration files.
     - **If the client name matches the name of a user on the system. That user's home directory would be used instead.**
 - While the tunnel is active, modifications to the firewall are done, including the creation of `FORWARD_WG2HOP` chain.
