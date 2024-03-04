@@ -23,10 +23,10 @@ Thus the traffic would take _virtually_ **2-hops** to reach the apartment (hence
 A script was created to install WireGuard on a server and configure the system for it to act as a relay.
 
 - Allows the creation & deletion of additional clients after installation.
-- The first client created during installation, or the client with the IP `192.168.197.1` **is the special "gateway" client**.
+- The first client created during installation, or the client with the IP `192.168.137.1` **is the special "gateway" client**.
 - Based on [wireguard-install](https://github.com/angristan/wireguard-install) but modified to not conflict with existing `wireguard-install` installation.
 - Firewall & Routing tables are configured to isolate the clients from each other and protect the other services running on the relay server.
-- The subnet is hardcoded to `192.168.197.0/24` to suite [Windows ICS](https://en.wikipedia.org/wiki/Internet_Connection_Sharing) and precalculate some filtering rules.
+- The subnet is hardcoded to `192.168.137.0/24` to suite [Windows ICS](https://en.wikipedia.org/wiki/Internet_Connection_Sharing) and precalculate some filtering rules.
 - A "soft uninstallation" option is added to remove only the configurations done by the script, leaving WireGuard installed on the system (incase it's used for other VPN tunnels).
 
 #### Tunnel Firewall Configuration
@@ -158,12 +158,12 @@ The script has been modified by [Rami Sabbagh](https://github.com/Rami-Sabbagh/)
 - **Dropped IPv6 support in the VPN (still supports public IPv6 of the server).**
 - Changed the default interface name from `wg0` into `wg2hop`.
 - Changed the default subnet.
-    - IPv4 from `10.66.66.0/24` into `192.168.197.0/24`.
+    - IPv4 from `10.66.66.0/24` into `192.168.137.0/24`.
     - ~~IPv6 from `fd42:42:42::/64` into `fd42:42:40::/64`.~~ (IPv6 support has been removed later)
 - Changed configuration filenames to avoid conflict with the original script.
     - Changed `/etc/wireguard/params` into `/etc/wireguard/params_2hop`.
 - Changed the `PostUp`&`PostDown` options in the server config to configure the firewall & routing differently.
-- The first client (with ip `192.168.197.12`) has customized configuration on the server side, client side and the firewall.
-    - The subnet `192.168.197.0` is hardcoded.
+- The first client (with ip `192.168.137.12`) has customized configuration on the server side, client side and the firewall.
+    - The subnet `192.168.137.0` is hardcoded.
     - Customized `AllowedIPs` and added `PersistentKeepalive`.
 - Change how used IPs are detected.
