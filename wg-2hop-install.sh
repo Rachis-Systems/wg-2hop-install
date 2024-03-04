@@ -419,7 +419,7 @@ PublicKey = ${SERVER_PUB_KEY}
 PresharedKey = ${CLIENT_PRE_SHARED_KEY}
 Endpoint = ${ENDPOINT}" >"${HOME_DIR}/${SERVER_WG_NIC}-client-${CLIENT_NAME}.conf"
 
-	if [[ ${CLIENT_WG_IPV4} == "${BASE_IPV4}.2" ]]; then
+	if [[ ${CLIENT_WG_IPV4} == "${BASE_IPV4}.1" ]]; then
 		# This is the 2-hop gateway of the VPN.
 
 		# Allow traffic into any peer in the VPN.
@@ -440,7 +440,7 @@ Endpoint = ${ENDPOINT}" >"${HOME_DIR}/${SERVER_WG_NIC}-client-${CLIENT_NAME}.con
 PublicKey = ${CLIENT_PUB_KEY}
 PresharedKey = ${CLIENT_PRE_SHARED_KEY}" >>"/etc/wireguard/${SERVER_WG_NIC}.conf"
 
-	if [[ ${CLIENT_WG_IPV4} == "${BASE_IPV4}.2" ]]; then
+	if [[ ${CLIENT_WG_IPV4} == "${BASE_IPV4}.1" ]]; then
 		# This is the 2-hop gateway of the VPN.
 
 		# Allow all traffic through it (the firewall would limit it)
