@@ -100,6 +100,22 @@ To setup a Windows client do the following:
     5. Confirm the changes by clicking _"OK"_.
 5. Deactivate & Reactivate the VPN tunnel, the network sharing should work now.
 
+## Manual Control of the VPN
+
+The VPN may be stopped, started, enabled and disabled using the following commands (they all require root/sudo):
+
+```shell
+systemctl enable wg-quick@wg2hop
+systemctl start wg-quick@wg2hop
+systemctl stop wg-quick@wg2hop
+systemctl disable wg-quick@wg2hop
+
+wg-quick up wg2hop
+wg-quick down wg2hop
+```
+
+The tunnel configuration is located at `/etc/wireguard/wg2hop.conf`.
+
 ## Script Footprint
 
 _The modifications left on the system after script execution._
