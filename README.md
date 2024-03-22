@@ -163,7 +163,7 @@ The script has been modified by [Rami Sabbagh](https://github.com/Rami-Sabbagh/)
 - Changed configuration filenames to avoid conflict with the original script.
     - Changed `/etc/wireguard/params` into `/etc/wireguard/params_2hop`.
 - Changed the `PostUp`&`PostDown` options in the server config to configure the firewall & routing differently.
-- The first client (with ip `192.168.137.12`) has customized configuration on the server side, client side and the firewall.
+- The first client (with ip `192.168.137.1`) has customized configuration on the server side, client side and the firewall.
     - The subnet `192.168.137.0` is hardcoded.
     - Customized `AllowedIPs` and added `PersistentKeepalive`.
 - Change how used IPs are detected.
